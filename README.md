@@ -11,19 +11,17 @@ Part of the [unpins](https://unpins.org) project — native single-binary builds
 
 ## Usage
 
-Run `lspci` with [unpin](https://github.com/unpins/unpin):
-
-```bash
-unpin lspci
-```
-
-To install it onto your PATH:
+Install with [unpin](https://github.com/unpins/unpin):
 
 ```bash
 unpin install pciutils
 ```
 
-`unpin install pciutils` also creates the `setpci` command, which reads and writes PCI configuration space.
+That puts the `lspci` and `setpci` commands on your PATH. List your PCI devices:
+
+```bash
+lspci
+```
 
 Listing devices needs no privilege on Linux and Windows — no `sudo`, no administrator, no driver. `setpci` (and the deep `lspci -vvv` dump) reads or writes configuration space, which needs root. macOS restricts PCI access at the OS level; see Build notes.
 
