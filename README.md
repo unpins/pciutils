@@ -1,13 +1,13 @@
 # pciutils
 
-Standalone build of [pciutils](https://github.com/pciutils/pciutils) — `lspci` (list PCI devices) and `setpci` (read/write PCI configuration space), in a single binary.
+[pciutils](https://github.com/pciutils/pciutils) — `lspci` (list PCI devices) and `setpci` (read/write PCI configuration space), in a single self-contained binary built natively for Linux, macOS, and Windows.
 
 [![CI](https://github.com/unpins/pciutils/actions/workflows/pciutils.yml/badge.svg)](https://github.com/unpins/pciutils/actions)
 ![Linux](https://img.shields.io/badge/Linux-✓-success?logo=linux&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-✓-success?logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-⚠-yellow?logo=apple&logoColor=white)
 
-Part of the [unpins](https://unpins.org) project — native single-binary builds with no third-party runtime dependencies.
+Part of the [unpins](https://unpins.org) catalog; install it with [`unpin`](https://github.com/unpins/unpin): `unpin install pciutils`.
 
 ## Usage
 
