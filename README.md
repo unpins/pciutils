@@ -51,8 +51,8 @@ The [Releases](https://github.com/unpins/pciutils/releases) page has standalone 
   share `common.o` and the static `libpci`, linked once.
 - The PCI ID database (`pci.ids`) is embedded, so `lspci` resolves
   vendor/device names with no companion file; `lspci -i <file>` overrides it.
-  Both man pages (`lspci.8`, `setpci.8`) are embedded too — `unpin man lspci` /
-  `unpin man setpci`.
+  Both man pages (`lspci.8`, `setpci.8`) are embedded too —
+  `unpin man pciutils lspci` / `unpin man pciutils setpci`.
 - Backends: Linux sysfs, Windows `cfgmgr32` (driverless — `lspci` lists with no
   admin, but `setpci` cannot write there), macOS IOKit. Windows is cross-built
   with mingw; the `.exe` has no companion DLLs.
