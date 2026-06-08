@@ -1,6 +1,6 @@
 # pciutils
 
-Standalone build of [pciutils](https://github.com/pciutils/pciutils) — `lspci` (list PCI devices) and `setpci` (read/write PCI configuration space), in one binary.
+Standalone build of [pciutils](https://github.com/pciutils/pciutils) — `lspci` (list PCI devices) and `setpci` (read/write PCI configuration space), in a single binary.
 
 [![CI](https://github.com/unpins/pciutils/actions/workflows/pciutils.yml/badge.svg)](https://github.com/unpins/pciutils/actions)
 ![Linux](https://img.shields.io/badge/Linux-✓-success?logo=linux&logoColor=white)
@@ -11,29 +11,33 @@ Part of the [unpins](https://unpins.org) project — native single-binary builds
 
 ## Usage
 
-Install with [unpin](https://github.com/unpins/unpin):
+Run `lspci` with [unpin](https://github.com/unpins/unpin):
+
+```bash
+unpin lspci
+```
+
+To install it onto your PATH:
 
 ```bash
 unpin install pciutils
 ```
 
-That puts three commands on your PATH — `pciutils`, `lspci` and `setpci` (the
-single binary answers to all three). List your PCI devices:
+`unpin install pciutils` also creates the `setpci` command, which reads and writes PCI configuration space.
 
-```bash
-lspci
-```
-
-On **Linux** and **Windows** listing works as an ordinary user — no `sudo`, no
-administrator, no driver to install. `setpci` and the deep `lspci -vvv` dump need
-root (they read/write configuration space); see the notes below. macOS has a
-hardware-access limitation, also below.
+Listing devices needs no privilege on Linux and Windows — no `sudo`, no administrator, no driver. `setpci` (and the deep `lspci -vvv` dump) reads or writes configuration space, which needs root. macOS restricts PCI access at the OS level; see Build notes.
 
 ## Build locally
 
 ```bash
 nix build github:unpins/pciutils
-./result/bin/pciutils          # or: nix run github:unpins/pciutils
+./result/bin/pciutils --version
+```
+
+Or run directly:
+
+```bash
+nix run github:unpins/pciutils -- --version
 ```
 
 The first invocation will offer to add the [unpins.cachix.org](https://unpins.cachix.org) substituter so most pulls come pre-built.
@@ -42,53 +46,24 @@ The first invocation will offer to add the [unpins.cachix.org](https://unpins.ca
 
 The [Releases](https://github.com/unpins/pciutils/releases) page has standalone binaries for manual download.
 
-## Man pages
+## Build notes
 
-`lspci.8` and `setpci.8` are embedded in the binary — read them with
-`unpin man lspci` / `unpin man setpci`.
-
-## Notes
-
-**One binary, three names.** `pciutils` is a single executable that dispatches on
-its invocation name (busybox-style); `lspci` and `setpci` are recorded inside it
-and `unpin` recreates them as commands on your PATH at install. A bare `pciutils`
-runs `lspci`.
-
-**Self-contained.** The PCI ID database (`pci.ids`, which turns numeric
-vendor/device codes into readable names) is **embedded in the binary**, so names
-resolve with no companion file. Point `lspci -i <file>` at your own database to
-override it.
-
-**`setpci` and privilege.** `lspci` lists devices and basic details with no
-privilege; the deep dump (`lspci -vvv`, extended PCIe capabilities) reads the full
-configuration space, which the kernel only exposes to root. `setpci` *writes*
-configuration space and so needs root on Linux. Note that pciutils does **no**
-permission pre-check: run without privilege, `setpci` tries to open the config
-space, the kernel denies it, and it prints `pcilib: Cannot open ...` to stderr —
-but **exits 0** (this is upstream behaviour, identical to every distribution's
-pciutils, not something this build changes). Don't rely on `setpci`'s exit status
-to detect a permission failure.
-
-**`pcilmr` is not included.** Upstream also ships `pcilmr` (PCIe lane margining).
-It is root-only, Linux-only, needs special system preparation, and does nothing on
-Windows/macOS, so it is left out.
-
-How each OS is read:
-
-- **Linux** — through `/sys/bus/pci`. Ships for six arches: x86_64, aarch64, i686,
-  ppc64le, riscv64, armv7l. `lspci` lists devices with no privilege; `setpci`
-  writes as root.
-- **Windows** — through the Configuration Manager (`cfgmgr32`), the same database
-  the Device Manager uses. `lspci` enumerates with no kernel driver and no
-  administrator rights. `cfgmgr32` is a read/enumerate interface, so **`setpci`
-  cannot write** there (a real config-space write needs a port/kernel driver,
-  which this driverless build does not ship).
-- **macOS** — ⚠️ **largely non-functional on a stock Mac.** Apple does not expose
-  PCI configuration space to user space the way Linux and Windows do: the only
-  access path (IOKit's `AppleACPIPlatformExpert`) requires **both** root **and**
-  booting with the `debug=0x144` kernel boot argument
-  (`sudo nvram boot-args=debug=0x144`, then reboot; this needs SIP relaxed).
-  Without that, `lspci` reports *"Cannot find any working access method"* and lists
-  nothing. The binary builds and `lspci --version` works, so it is shipped for the
-  power users who set the boot-arg — but most macOS users will find it unusable.
-  There is no portable fix; the limitation is in macOS itself.
+- One multicall binary holds both programs. `pciutils` is the canonical name (a
+  busybox-style dispatcher); `lspci` and `setpci` dispatch on `argv[0]`. They
+  share `common.o` and the static `libpci`, linked once.
+- The PCI ID database (`pci.ids`) is embedded, so `lspci` resolves
+  vendor/device names with no companion file; `lspci -i <file>` overrides it.
+  Both man pages (`lspci.8`, `setpci.8`) are embedded too — `unpin man lspci` /
+  `unpin man setpci`.
+- Backends: Linux sysfs, Windows `cfgmgr32` (driverless — `lspci` lists with no
+  admin, but `setpci` cannot write there), macOS IOKit. Windows is cross-built
+  with mingw; the `.exe` has no companion DLLs.
+- `setpci` does no permission check: run without root it prints `pcilib: Cannot
+  open ...` to stderr but still exits 0 — upstream behaviour, so don't rely on
+  its exit status to detect a denied write.
+- **macOS**: Apple gates PCI configuration space — `lspci` needs *both* root and
+  the `debug=0x144` kernel boot-arg (`sudo nvram boot-args=debug=0x144`, reboot,
+  SIP relaxed). Without it, `lspci` lists nothing. Shipped for the power users
+  who set the boot-arg; there is no portable fix.
+- `pcilmr` (PCIe lane margining) is upstream but not included: root-only,
+  Linux-only, and inert on Windows/macOS.
