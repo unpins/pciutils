@@ -1,5 +1,5 @@
 {
-  description = "Standalone build of pciutils (lspci + setpci)";
+  description = "pciutils (lspci + setpci) as a single self-contained binary";
 
   nixConfig = {
     extra-substituters = [ "https://unpins.cachix.org" ];
