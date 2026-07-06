@@ -126,11 +126,15 @@ let
         lib/config.mk | tr '\n' ' ')
 
       # Dispatcher (shared canonical generator — see nix-lib
-      # lib.multicallDispatcherC). Applet list from multicall/apps.list ($TOOLS);
-      # a bare/unknown invocation runs lspci (defaultApplet) so the `pciutils
-      # --version` smoke reaches lspci_main and a renamed copy still dispatches.
-      printf '%s\n' $TOOLS > multicall/apps.list
-${lib.multicallDispatcherC { name = "pciutils"; defaultApplet = "lspci"; }}
+      # lib.multicallTableDispatcherC). It reads multicall/applets.list as a TSV
+      # of <applet-name>\t<fn-base> (C symbol <fn-base>_main). The objcopy rename
+      # above turns each tool's `main` into `<tool>_main` (line ~109), so the
+      # fn-base IS the tool name — one self-mapping row per $TOOLS entry, no
+      # aliases. A bare/unknown invocation runs lspci (defaultApplet) so the
+      # `pciutils --version` smoke reaches lspci_main and a renamed copy still
+      # dispatches.
+      for t in $TOOLS; do printf '%s\t%s\n' "$t" "$t"; done > multicall/applets.list
+${lib.multicallTableDispatcherC { name = "pciutils"; defaultApplet = "lspci"; }}
       $CC -O2 -c -o multicall/dispatcher.o multicall/dispatcher.c
 
       # Final link: renamed tool objects + dispatcher + libpci.a (once) + the
