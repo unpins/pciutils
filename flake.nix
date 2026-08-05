@@ -40,9 +40,9 @@
     ulib.mkStandaloneFlake {
       inherit self;
       name = "pciutils";
-      smoke = [ "--version" ];
-      # `pciutils --version` dispatches to lspci (defaultApplet) -> "lspci
-      # version 3.15.0"; match the version rather than the canonical name.
+      smoke = [ "--unpin-program=lspci" "--version" ];
+      # lspci prints "lspci version 3.15.0"; match the version rather than the
+      # canonical name.
       smokePattern = "version 3\\.";
 
       # Build via the unpin-llvm engine + emit a bitcode multicall module. The
@@ -59,7 +59,6 @@
         # mega-link names them. Harmlessly absent from the Linux link.
         requires.frameworks = [ "IOKit" "CoreFoundation" ];
         programs = [ { name = "lspci"; } { name = "setpci"; } ];
-        defaultProgram = "lspci";
       };
 
       # Linux + darwin: plain pkgsStatic.pciutils compiled to bitcode and

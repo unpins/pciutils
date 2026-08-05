@@ -3,7 +3,7 @@
 # honour the unpins one-pkg-one-bin rule we post-link them into a single
 # multicall binary at $out/bin/pciutils (a busybox-style dispatcher named after
 # the package, as the unpins CI resolves result/bin/<package-name>); a bare
-# `pciutils` runs lspci (defaultApplet). `lib.withAliases` then embeds `lspci`
+# `pciutils` is not a program, so it lists. `lib.withAliases` then embeds `lspci`
 # and `setpci` as UNPIN_META aliases so unpin's installer recreates the argv[0]
 # shims on PATH.
 #
@@ -130,11 +130,10 @@ let
       # of <applet-name>\t<fn-base> (C symbol <fn-base>_main). The objcopy rename
       # above turns each tool's `main` into `<tool>_main` (line ~109), so the
       # fn-base IS the tool name — one self-mapping row per $TOOLS entry, no
-      # aliases. A bare/unknown invocation runs lspci (defaultApplet) so the
-      # `pciutils --version` smoke reaches lspci_main and a renamed copy still
-      # dispatches.
+      # aliases. A bare/unknown invocation lists the programs; the smoke selects
+      # one with --unpin-program=.
       for t in $TOOLS; do printf '%s\t%s\n' "$t" "$t"; done > multicall/applets.list
-${lib.multicallTableDispatcherC { name = "pciutils"; defaultApplet = "lspci"; }}
+${lib.multicallTableDispatcherC { name = "pciutils"; }}
       $CC -O2 -c -o multicall/dispatcher.o multicall/dispatcher.c
 
       # Final link: renamed tool objects + dispatcher + libpci.a (once) + the
