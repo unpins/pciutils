@@ -54,6 +54,23 @@
           postPatch = (old.postPatch or "") + ''
             xxd -i -n embedded_pci_ids \
               ${pkgs.buildPackages.hwdata}/share/hwdata/pci.ids > lib/embedded_pci_ids.h
+          '' + pkgs.lib.optionalString isWindows ''
+            # lib/i386-io-windows.h uses the compiler's own __readeflags only when
+            # __GNUC__ >= 4.9, and clang answers 4.2 to that question — so it took
+            # the hand-rolled branch below and redefined an intrinsic clang already
+            # has. Route clang to <x86intrin.h>, which is the branch meant for a
+            # compiler that provides one.
+            substituteInPlace lib/i386-io-windows.h \
+              --replace-fail \
+                '#elif defined(__GNUC__) && ((__GNUC__ == 4 && __GNUC_MINOR__ >= 9) || (__GNUC__ > 4))' \
+                '#elif defined(__clang__) || (defined(__GNUC__) && ((__GNUC__ == 4 && __GNUC_MINOR__ >= 9) || (__GNUC__ > 4)))'
+            # Same shape, one file over: init.c aliases __ImageBase onto
+            # _image_base__, the name GNU ld used before 2.19 — so the alias
+            # points AT the symbol it means to stand in for. lld goes the other
+            # way and defines __ImageBase itself, leaving _image_base__ undefined,
+            # and clang answers __GNUC__ so the asm gets compiled anyway.
+            substituteInPlace lib/init.c \
+              --replace-fail '#ifdef __GNUC__' '#if defined(__GNUC__) && !defined(__clang__)'
           '' + pkgs.lib.optionalString isDarwin ''
             # pciutils' lib/configure hardcodes `-lresolv` into the darwin
             # WITH_LIBS line, UNCONDITIONALLY (it's on the platform branch, not
