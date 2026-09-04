@@ -104,7 +104,21 @@
           postInstall = ''
             rm -f $out/sbin/update-pciids $out/man/man8/update-pciids.8
             rm -f $out/man/man7/pcilib.7* $out/man/man8/pcilmr.8*
+            rm -rf $out/share/misc
           '';
+          # `make install` creates IDSDIR and drops a pci.ids copy in it, so the
+          # /usr/share/misc below cannot be the install destination too: the
+          # builder has no write access outside its own tree and dies with
+          # "install: cannot create directory '/usr': Permission denied". Send
+          # the install to $out (postInstall then drops the copy, which the
+          # embedded db makes redundant). installFlags land after makeFlags on
+          # make's command line, and the last assignment wins.
+          #
+          # This is invisible locally: the older nix here gives the build a
+          # chroot whose root the builder may write, so `install -d /usr/...`
+          # succeeds and the flag looks harmless. CI's newer nix does not.
+          installFlags = (old.installFlags or [ ])
+            ++ [ "IDSDIR=${placeholder "out"}/share/misc" ];
           # pciutils' Makefile builds its compiler as `$(CROSS_COMPILE)gcc`.
           # The cross sets CROSS_COMPILE=<triple>-, but the engine cc-wrapper is
           # a single unprefixed clang (`-target` selects the arch), so the
