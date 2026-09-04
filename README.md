@@ -11,11 +11,15 @@ Part of the [unpins](https://unpins.org) catalog; install it with [`unpin`](http
 
 ## Usage
 
-Run it with [unpin](https://github.com/unpins/unpin) — a bare `pciutils` runs `lspci`:
+Run a program with [unpin](https://github.com/unpins/unpin):
 
 ```bash
-unpin pciutils
+unpin pciutils --unpin-program=lspci                       # list PCI devices
+unpin pciutils --unpin-program=lspci -v                    # verbose, with capabilities
+unpin pciutils --unpin-program=setpci -s 00:00.0 COMMAND   # read config space
 ```
+
+A bare `unpin pciutils` lists the programs it holds.
 
 To install the `lspci` and `setpci` commands onto your PATH:
 
@@ -51,8 +55,10 @@ The [Releases](https://github.com/unpins/pciutils/releases) page has standalone 
   share `common.o` and the static `libpci`, linked once.
 - The PCI ID database (`pci.ids`) is embedded, so `lspci` resolves
   vendor/device names with no companion file; `lspci -i <file>` overrides it.
-  Both man pages (`lspci.8`, `setpci.8`) are embedded too —
-  `unpin man pciutils lspci` / `unpin man pciutils setpci`.
+  The two program pages and `pci.ids.5` (the database's own format) are
+  embedded too — `unpin man pciutils lspci` / `unpin man pciutils setpci`.
+  The `pcilib.7` C API page is not: this binary ships the programs, not a
+  linkable library.
 - Backends: Linux sysfs, Windows `cfgmgr32` (driverless — `lspci` lists with no
   admin, but `setpci` cannot write there), macOS IOKit. Windows is cross-built
   with mingw; the `.exe` has no companion DLLs.

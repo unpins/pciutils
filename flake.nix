@@ -91,8 +91,19 @@
           # natively but breaks the darwin CROSS (arm64 hwdata's builder bash
           # can't exec on the x86_64-darwin build host: "No such file or
           # directory"). Drop the copy; keep only the update-pciids cleanup.
+          # The man harvest takes the whole `man` output, so prune the pages for
+          # things this binary has not got: `pcilib.7` documents the libpci C
+          # API (we ship the programs, not the linkable library) and `pcilmr.8`
+          # documents a program deliberately left out of the fold (see the
+          # header note). Same one-directional guard as everywhere else: it
+          # checks that every announced name has a page, never that every page
+          # has a program.
+          # pciutils' Makefile installs man under $out/man (MANDIR=$PREFIX/man);
+          # nixpkgs' fixup moves it to $man/share/man afterwards, so postInstall
+          # must use the pre-move path.
           postInstall = ''
             rm -f $out/sbin/update-pciids $out/man/man8/update-pciids.8
+            rm -f $out/man/man7/pcilib.7* $out/man/man8/pcilmr.8*
           '';
           # pciutils' Makefile builds its compiler as `$(CROSS_COMPILE)gcc`.
           # The cross sets CROSS_COMPILE=<triple>-, but the engine cc-wrapper is
@@ -102,7 +113,14 @@
           # unprefixed too. Correct for native and every cross alike.
           makeFlags = (builtins.filter
             (f: !(pkgs.lib.hasPrefix "CROSS_COMPILE=" f)) (old.makeFlags or [ ]))
-            ++ [ "ZLIB=no" "CROSS_COMPILE=" ]
+            # IDSDIR: the compiled-in fallback path for pci.ids. nixpkgs'
+            # PREFIX=$out makes it `<store path>/share/pci.ids` — a path on the
+            # build machine, and one that does not exist even there once
+            # postInstall drops the copy. Names come from the compiled-in db so
+            # it is never opened, but a store path in a shipped binary is worth
+            # a flag to avoid. Invisible to `nix-store -q --references`: under
+            # the engine the fold's inputs are the module archives, not `out`.
+            ++ [ "ZLIB=no" "CROSS_COMPILE=" "IDSDIR=/usr/share/misc" ]
             # DNS=no off Linux: names-net.c/names-cache.c (the online pci.ids DNS
             # lookup) #include <arpa/nameser.h> + <resolv.h>, which neither
             # nixpkgs' apple-sdk nor mingw ships — and unlike an unused include
