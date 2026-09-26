@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [3.15.0-2] - 2026-09-26
+
 ### Fixed
 
 - `unpin install pciutils` now creates the commands. In the v3.15.0-1 release
